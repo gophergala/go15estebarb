@@ -50,9 +50,9 @@ func handleUpload(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/", http.StatusFound)
 		return
 	}
-	//processImageGrayscale.Call(c, file[0].BlobKey)
-	//processImageVoronoi.Call(c, file[0].BlobKey)
-	//processImageOilPaint.Call(c, file[0].BlobKey)
+	processImageGrayscale.Call(c, file[0].BlobKey)
+	processImageVoronoi.Call(c, file[0].BlobKey)
+	processImageOilPaint.Call(c, file[0].BlobKey)
 	processImagePainterly.Call(c, file[0].BlobKey)
 	http.Redirect(w, r, "/serve/?blobKey="+string(file[0].BlobKey), http.StatusFound)
 }
