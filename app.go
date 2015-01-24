@@ -298,3 +298,37 @@ func filterOilPaint(c appengine.Context, m image.Image) image.Image{
 	return out
 }
 
+////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////
+
+func generateBrushes(minRad, numBrushes int) []int{
+	brushes := make([]int, numBrushes)
+	for k := range brushes{
+		brushes[numBrushes-k-1] = minRad
+		minRad += minRad
+	}
+	return brushes
+}
+
+func filterPainterly(c appengine.Context, m image.Image) image.Image{
+	bounds := m.Bounds()
+	canvas := image.NewNRGBA(bounds)
+	
+	// Estos parámetros posteriormente deberán ser... parametrizados:
+	brushMinRadius := 3
+	numOfBrushes := 10
+	brushes := generateBrushes(brushMinRadius, numOfBrushes)
+	
+	for _, radius := range brushes{
+		refImage := imaging.Blur(m, radius)
+		canvas := paintLayer(canvas, refImage, radius)		
+	}
+	return canvas
+}
+
+func paintLayer(cnv image.NRGBA, refImage image.Image, radius int){
+
+}
+
