@@ -1,0 +1,14 @@
+<html>
+<head>
+    <title>GopherPaint - Gopher Gala 2015</title>
+</head>
+<body>
+<h1>GopherPaint</h1>
+<p>Upload a image and a gopher will repaint it! (This gopher can read JPEG, and PNG)</p>
+<form method="POST" action="{{.}}" enctype="multipart/form-data">
+    <label for="file">Filename:</label>
+    <input type="file" name="file" id="file">
+    <input type="submit" name="submit" value="Submit">
+</form>
+</body>
+</html>
