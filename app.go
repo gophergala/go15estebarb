@@ -14,11 +14,13 @@ import (
 	"appengine/blobstore"
 	"appengine/delay"
 	"github.com/disintegration/imaging"
+	"code.google.com/p/draw2d/draw2d"
 )
 
 var processImageGrayscale = delay.Func("grayscale", doProcessingGray)
 var processImageVoronoi = delay.Func("voronoi", doProcessingVoronoi)
 var processImageOilPaint = delay.Func("oilpaint", doProcessingOilPaint)
+var processImagePainterly = delay.Func("painterly", doProcessingPainterly)
 
 
 func init() {
@@ -48,9 +50,10 @@ func handleUpload(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/", http.StatusFound)
 		return
 	}
-	processImageGrayscale.Call(c, file[0].BlobKey)
-	processImageVoronoi.Call(c, file[0].BlobKey)
-	processImageOilPaint.Call(c, file[0].BlobKey)
+	//processImageGrayscale.Call(c, file[0].BlobKey)
+	//processImageVoronoi.Call(c, file[0].BlobKey)
+	//processImageOilPaint.Call(c, file[0].BlobKey)
+	processImagePainterly.Call(c, file[0].BlobKey)
 	http.Redirect(w, r, "/serve/?blobKey="+string(file[0].BlobKey), http.StatusFound)
 }
 
@@ -109,6 +112,18 @@ func doProcessingOilPaint(c appengine.Context, blobkey appengine.BlobKey){
 	}
 	img = rescaleImage(img)
 	pic := filterOilPaint(c, img)
+	saveImage(c, pic)
+}
+
+
+func doProcessingPainterly(c appengine.Context, blobkey appengine.BlobKey){
+	r := blobstore.NewReader(c, blobkey)
+	img, _, err := image.Decode(r)
+	if err != nil {
+		c.Errorf("%v", err)
+	}
+	img = rescaleImage(img)
+	pic := filterPainterly(c, img)
 	saveImage(c, pic)
 }
 
@@ -314,21 +329,97 @@ func generateBrushes(minRad, numBrushes int) []int{
 
 func filterPainterly(c appengine.Context, m image.Image) image.Image{
 	bounds := m.Bounds()
-	canvas := image.NewNRGBA(bounds)
+	canvas := image.NewRGBA(bounds)
 	
 	// Estos parámetros posteriormente deberán ser... parametrizados:
 	brushMinRadius := 3
-	numOfBrushes := 10
+	numOfBrushes := 3
 	brushes := generateBrushes(brushMinRadius, numOfBrushes)
 	
 	for _, radius := range brushes{
-		refImage := imaging.Blur(m, radius)
-		canvas := paintLayer(canvas, refImage, radius)		
+		c.Infof("Brush %v", radius)
+		refImage := imaging.Blur(m, float64(radius))
+		paintLayer(canvas, refImage, radius, 100)
 	}
 	return canvas
 }
 
-func paintLayer(cnv image.NRGBA, refImage image.Image, radius int){
+func imageDifference(A *image.RGBA, B image.Image)[][]float64{
+	ys := A.Bounds().Max.Y
+	xs := A.Bounds().Max.X
+	res := make([][]float64, ys)
+	for y := 0; y < ys; y++{
+		rowdif := make([]float64, xs)
+		for x:=0; x < xs; x++{
+			ar, ag, ab, aa := A.At(x,y).RGBA()
+			br, bg, bb, ba := B.At(x,y).RGBA()
+			dr, dg, db, da := float64(ar-br), float64(ag-bg), float64(ab-bb), float64(aa-ba)
+			rowdif[x] = math.Sqrt(dr*dr+dg*dg+db*db+da*da)
+		}
+		res[y] = rowdif
+	}
+	return res
+}
 
+type MyStroke struct{
+	Color color.Color
+	Point image.Point
+	Radius int
+}
+
+func paintLayer(cnv *image.RGBA, refImage image.Image, radius int, T float64) image.Image{
+	strokes := make([]MyStroke,0)
+	D := imageDifference(cnv, refImage)
+
+	ys := cnv.Bounds().Max.Y
+	xs := cnv.Bounds().Max.X
+	for y := 0; y < ys; y++{
+		for x:=0; x < xs; x++{
+			// Calculates the error near (x,y):
+			areaError := float64(0)
+			maxdif := float64(0)
+			maxx := 0
+			maxy := 0
+			for y2 := IntMax(0, y-radius); y2 < IntMin(ys, y+radius); y2++ {
+				for x2 := IntMax(0, x-radius); x2 < IntMin(xs, x+radius); x2++ {
+					dif := D[y2][x2]
+					areaError += dif
+					if dif > maxdif{
+						maxdif = dif
+						maxx = x2
+						maxy = y2
+					}
+				}
+			}
+			areaError = areaError / float64(radius*radius)
+			
+			if areaError > T {
+				strokes = append(strokes, MyStroke{
+						Color: refImage.At(maxx, maxy),
+						Point: image.Point{maxx, maxy},
+						Radius: radius,
+					})
+			}
+		}
+	}
+	PaintStrokes(cnv, strokes)
+	return cnv
+}
+
+func PaintStrokes(cnv *image.RGBA, strokes []MyStroke){
+	gc := draw2d.NewGraphicContext(cnv)
+	order := rand.Perm(len(strokes))
+	
+	for _, v := range order{
+		s := strokes[v]
+		gc.SetFillColor(s.Color)
+		gc.SetLineWidth(0)
+		gc.ArcTo(float64(s.Point.X), 
+			float64(s.Point.Y),
+				float64(s.Radius),
+					float64(s.Radius),
+						0, 2*math.Pi)
+		gc.FillStroke()
+	}
 }
 
