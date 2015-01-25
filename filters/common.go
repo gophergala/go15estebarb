@@ -157,6 +157,17 @@ func IntMin(a, b int) int {
 	return a
 }
 
+var sobelHCoefficients = []float64{
+1.0, 0.0, -1.0,
+2.0, 0.0, -2.0,
+1.0, 0.0, -1.0,
+}
+var sobelVCoefficients = []float64{
+1.0, 2.0, 1.0,
+0.0, 0.0, 0.0,
+-1.0, -2.0, -1.0,
+}
+
 func SobelV(src image.Image) *image.RGBA{
 	// Apply the vertical sobel filter to an image.
 	g := gift.New(

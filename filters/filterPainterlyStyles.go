@@ -5,7 +5,6 @@ import (
 	"code.google.com/p/draw2d/draw2d"
 	"github.com/disintegration/imaging"
 	"image"
-	_ "image/jpeg"
 	"math"
 )
 
@@ -25,10 +24,11 @@ func FilterPainterlyStyles(c appengine.Context, m image.Image, settings *Painter
 	// Estos parámetros posteriormente deberán ser... parametrizados:
 	brushes := generateBrushes(settings.Style.Radius, settings.Style.NumOfBrushes)
 
+
 	for _, radius := range brushes {
 		c.Infof("Brush %v", radius)
-		refImage := imaging.Blur(m, settings.Style.BlurFactor*float64(radius))
-		paintLayerStyles(canvas, refImage, radius, settings)
+		refImage := imaging.Blur(m, settings.Style.BlurFactor*float64(radius)*2.0)
+		paintLayerStyles(canvas, refImage, radius, settings, c)
 	}
 	return canvas
 }
@@ -142,13 +142,16 @@ var StylePsychedelic = PainterlyStyle{
 	JitterSaturation: 0.25,
 }
 
-func paintLayerStyles(cnv *image.RGBA, refImage image.Image, radius int, settings *PainterlySettings) image.Image {
+func paintLayerStyles(cnv *image.RGBA, refImage image.Image, radius int,
+	settings *PainterlySettings, c appengine.Context) image.Image {
 	D := ImageDifference(cnv, refImage)
-	gradMag, gradOri := GradientData(refImage)
+	magGrad, oriGrad := GradientData(refImage)
 	ys := cnv.Bounds().Max.Y
 	xs := cnv.Bounds().Max.X
-	for y := 0; y < ys; y++ {
-		for x := 0; x < xs; x++ {
+	fradius := float64(radius)
+	for y := 0; y < ys; y+=int(fradius*settings.Style.GridSize) {
+		c.Infof("row %v of %v", y, ys)
+		for x := 0; x < xs; x+=int(fradius*settings.Style.GridSize) {
 			// Calculates the error near (x,y):
 			areaError := float64(0)
 			maxdif := float64(0)
@@ -168,10 +171,11 @@ func paintLayerStyles(cnv *image.RGBA, refImage image.Image, radius int, setting
 			areaError = areaError / float64(radius*radius)
 
 			if areaError > settings.Style.T {
-				newstroke := createCurve(cnv, refImage, gradMag, gradOri, maxx, maxy, radius,
-				settings)
+				newstroke := createCurve(cnv, refImage, magGrad, oriGrad, maxx, maxy, radius,
+				settings, c)
 				drawStroke(cnv, newstroke)
 			}
+			//D = ImageDifference(cnv, refImage)
 		}
 	}
 	return cnv
@@ -206,6 +210,85 @@ func drawStroke(cnv *image.RGBA, points []MyStroke){
 }
 
 func createCurve(cnv *image.RGBA,
+	refImage image.Image,
+	gradMag [][]float64,
+	gradOri [][]float64,
+	x0, y0, radius int,
+	settings *PainterlySettings,
+	c appengine.Context) []MyStroke{
+	// ------
+	MaxStrokeLength := settings.Style.MaximumStroke
+	MinStrokeLength := settings.Style.MinimumStroke
+	fc := settings.Style.FC
+	ancho, alto := refImage.Bounds().Max.X, refImage.Bounds().Max.Y
+
+	strokeColor := refImage.At(x0, y0)
+	output := []MyStroke{
+		MyStroke{
+			Color: RandomizeColor(strokeColor, settings),
+			Point: image.Point{x0, y0},
+			Radius: radius,
+		},
+	}
+	x,y := x0, y0
+	lastDX, lastDY := 0.0, 0.0
+
+
+	for i := 1; i <= MaxStrokeLength; i++{
+		x = IntMax(0, IntMin(x, ancho-1))
+		y = IntMax(0, IntMin(y, alto-1))
+
+		// If we have already painted the minimal
+		// stroke length and the paint color
+		// differs from the color goal
+		refColor := refImage.At(x, y)
+		cnvColor := cnv.At(x, y)
+		if i > MinStrokeLength &&
+				(ColorDistance(refColor, cnvColor) <
+						ColorDistance(refColor, strokeColor)){
+			c.Infof("color differs")
+			return output
+		}
+
+		// Detect vanishing gradient
+		if gradMag[y][x] == 0{
+			c.Infof("vanishing gradient")
+			return output
+		}
+
+		// get unit vector of gradient
+		gy, gx := math.Sincos(gradOri[y][x])
+		dx, dy := -gx, gy
+
+		// If necesary, reverse direction
+		if lastDX*dx+lastDY*dy<0{
+			dx, dy = -dx, -dy
+		}
+
+		// filter the stroke direction
+		dx, dy = fc*dx+(1-fc)*lastDX, fc*dy+(1-fc)*lastDY
+		temproot := math.Sqrt(dx*dx+dy*dy)
+		dx, dy = dx/temproot, dy/temproot
+		x, y = int(float64(x)+float64(radius)*dx), int(float64(y)+float64(radius)*dy)
+		lastDX, lastDY = dx, dy
+
+		// add new stroke
+		output = append(output, MyStroke{
+				Color: strokeColor,
+				Point: image.Point{x, y},
+				Radius: radius,
+			})
+	}
+	return output
+}
+
+/*
+func DerivateAtPoint(x, y int, cnv *image.RGBA) (float64, float64){
+	x = IntMax(1, IntMin(x, cnv.Bounds().Max.X-1))
+	y = IntMax(1, IntMin(y, cnv.Bounds().Max.Y-1))		
+}*/
+/*
+func createCurveOLD(cnv *image.RGBA,
 	refImage image.Image,
 	gradMag [][]float64,
 	gradOri [][]float64,
@@ -272,3 +355,4 @@ func createCurve(cnv *image.RGBA,
 	}
 	return output
 }
+*/
