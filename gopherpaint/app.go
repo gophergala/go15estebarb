@@ -3,6 +3,10 @@ package gopherpaint
 import (
 	"appengine"
 	"appengine/blobstore"
+	"appengine/memcache"
+	"appengine/user"
+	"bytes"
+	"errors"
 	"filters"
 	"html/template"
 	"image"
@@ -11,18 +15,21 @@ import (
 	"image/png"
 	"io"
 	"net/http"
-	"errors"
-	"appengine/memcache"
-	"bytes"
-	"appengine/user"
+	"time"
 )
-
-
 
 var templates = map[string]*template.Template{
 	"prepare": template.Must(template.ParseFiles("templates/prepare.html", "templates/scripts.html")),
-	"home": template.Must(template.ParseFiles("templates/home.html", "templates/scripts.html")),
-	"share": template.Must(template.ParseFiles("templates/share.html", "templates/scripts.html")),
+	"home":    template.Must(template.ParseFiles("templates/home.html", "templates/scripts.html")),
+	"share":   template.Must(template.ParseFiles("templates/share.html", "templates/scripts.html")),
+}
+
+type Image struct {
+	OwnerID      string
+	Blobkey      appengine.BlobKey
+	Style        string
+	CreationTime time.Time
+	MD5          string
 }
 
 func init() {
@@ -53,7 +60,7 @@ func handleUpload(w http.ResponseWriter, r *http.Request) {
 		serveError(c, w, errors.New("no files uploaded"))
 		return
 	}
-	
+
 	http.Redirect(w, r, "/prepare?blobKey="+string(file[0].BlobKey), http.StatusFound)
 }
 
@@ -90,9 +97,9 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		}
 		context["IsLogged"] = false
 		context["LoginURL"] = url
-	}else{
+	} else {
 		context["IsLogged"] = true
-		context["UserID"] = u.Email
+		context["UserName"] = u.String()
 		context["LogoutURL"], err = user.LogoutURL(c, "/")
 		if err != nil {
 			serveError(c, w, err)
@@ -109,7 +116,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 
 func handlePreview(w http.ResponseWriter, r *http.Request) {
 	size := 200
-	switch r.FormValue("size"){
+	switch r.FormValue("size") {
 	case "800":
 		size = 800
 	default:
@@ -118,29 +125,27 @@ func handlePreview(w http.ResponseWriter, r *http.Request) {
 	handleRender(w, r, size)
 }
 
-
-
 func handleRender(w http.ResponseWriter, r *http.Request, size int) {
 	c := appengine.NewContext(r)
 	r.ParseForm()
 	blobkey := (appengine.BlobKey)(r.FormValue("blobKey"))
-	attachment :=r.FormValue("attachment")
+	attachment := r.FormValue("attachment")
 	style := r.FormValue("style")
-	
-	if attachment == "1"{
+
+	if attachment == "1" {
 		w.Header().Set("Content-Disposition", "attachment")
 	}
-	
+
 	// First tries to retrieve it from memcache:
-	item, err := memcache.Get(c, (string)(blobkey) + "_" + style+"_"+string(size))
-	if err == nil{
+	item, err := memcache.Get(c, (string)(blobkey)+"_"+style+"_"+string(size))
+	if err == nil {
 		// Yay, we have the picture in cache
 		w.Header().Set("Content-type", "image/png")
 		w.Header().Set("Cache-control", "public, max-age=259200")
 		w.Write(item.Value)
 		return
 	}
-	
+
 	rimg := blobstore.NewReader(c, blobkey)
 	img, _, err := image.Decode(rimg)
 	if err != nil {
@@ -178,7 +183,7 @@ func handleRender(w http.ResponseWriter, r *http.Request, size int) {
 			Blobkey: blobkey,
 		})
 	default:
-		style="grayscale"
+		style = "grayscale"
 		img = filters.FilterGrayscale(c, img)
 	}
 	// Set the headers
@@ -188,7 +193,7 @@ func handleRender(w http.ResponseWriter, r *http.Request, size int) {
 	png.Encode(buffer, img)
 	w.Write(buffer.Bytes())
 	mcItem := &memcache.Item{
-		Key: (string)(blobkey) + "_" + style+"_"+string(size),
+		Key:   (string)(blobkey) + "_" + style + "_" + string(size),
 		Value: buffer.Bytes(),
 	}
 	memcache.Add(c, mcItem)

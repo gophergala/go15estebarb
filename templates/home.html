@@ -28,7 +28,7 @@
         <input type="submit" name="submit" value="Submit">
     </form>
     
-    <h2>Images of {{.UserID}} <a class="btn btn-warning btn-xs" href="{{.LogoutURL}}">Logout</a> </h2>
+    <h2>Images of {{.UserName}} <a class="btn btn-warning btn-xs" href="{{.LogoutURL}}">Logout</a> </h2>
     <div class="row">
         {{ range $key, $value := .Images }}
         <div class="col-sm-6 col-md-4">
