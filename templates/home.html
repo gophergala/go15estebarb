@@ -7,17 +7,17 @@
 </head>
 <body>
 {{template "scripts" .}}
+{{template "navbar" .}}
 <div class="container">
     <img src="/static/logo.png" class="pull-right">
-    <h1>GopherPaint</h1>
-
+    <div class="jumbotron">
+        <h1>GopherPaint</h1>
     {{if not .IsLogged}}
     <p>Please sign in with your Google Account to upload images.</p>
     <a href="{{.LoginURL}}" class="btn btn-lg btn-success">Log In</a>
     {{ end }}
     
-    {{if .IsLogged}}
-    <div class="well">
+    {{if .IsLogged}}    
     <p>Upload a image to repaint it! (accepting jpeg, png and gif)</p>
     <form method="POST" action="{{.uploadURL}}" enctype="multipart/form-data" class="form-horizontal">
         <div class="form-group">
@@ -51,6 +51,24 @@
             </div>
         </div>
         {{ end }}
+    </div>
+    {{ end }}
+    {{if not .IsLogged}}
+    <div class="row">
+        <div class="col-lg-4">
+            <h2>Transform your images to paintings</h2>
+            <p>Upload your own image and a gopher will transform it in a paint.</p>
+        </div>
+        <div class="col-lg-4">
+            <h2>Styles</h2>
+            <p>Choose from 8 different painting styles.</p>
+            <img src="/static/ministyles.png">
+        </div>
+        <div class="col-lg-4">
+            <h2>Share it!</h2>
+            <p>Share to G+, Twitter or Facebook. You can also download it to your computer or save to Dropbox.</p>
+            <img src="/static/minishareit.png">
+        </div>
     </div>
     {{ end }}
 </div>

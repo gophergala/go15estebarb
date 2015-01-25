@@ -19,9 +19,9 @@ import (
 )
 
 var templates = map[string]*template.Template{
-	"prepare": template.Must(template.ParseFiles("templates/prepare.html", "templates/scripts.html")),
-	"home":    template.Must(template.ParseFiles("templates/home.html", "templates/scripts.html")),
-	"share":   template.Must(template.ParseFiles("templates/share.html", "templates/scripts.html")),
+	"prepare": template.Must(template.ParseFiles("templates/prepare.html", "templates/scripts.html", "templates/navbar.html")),
+	"home":    template.Must(template.ParseFiles("templates/home.html", "templates/scripts.html", "templates/navbar.html")),
+	"share":   template.Must(template.ParseFiles("templates/share.html", "templates/scripts.html", "templates/navbar.html")),
 }
 
 func init() {
@@ -97,8 +97,8 @@ func handleShare(w http.ResponseWriter, r *http.Request) {
 	u := user.Current(c)
 	if u != nil{
 		_, err := Images_UpdateStyle(c, u, imgkey, newstyle)
-		if err != nil {
-			context["error"] = err
+		if err != nil{
+			c.Errorf("handleShare: %v", err)
 		}
 	}
 	
@@ -134,7 +134,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 			serveError(c, w, err)
 			return
 		}
-		pics, _, err := Images_OfUser_GET(c, u)
+		pics, err := Images_OfUser_GET(c, u)
 		if err != nil {
 			serveError(c, w, err)
 			return
@@ -168,6 +168,9 @@ func handleRender(w http.ResponseWriter, r *http.Request, size int) {
 	attachment := r.FormValue("attachment")
 	style := r.FormValue("style")
 
+	// Set the headers
+	w.Header().Set("Content-type", "image/png")
+	w.Header().Set("Cache-control", "public, max-age=259200")
 	if attachment == "1" {
 		w.Header().Set("Content-Disposition", "attachment")
 	}
@@ -176,8 +179,6 @@ func handleRender(w http.ResponseWriter, r *http.Request, size int) {
 	item, err := memcache.Get(c, (string)(blobkey)+"_"+style+"_"+string(size))
 	if err == nil {
 		// Yay, we have the picture in cache
-		w.Header().Set("Content-type", "image/png")
-		w.Header().Set("Cache-control", "public, max-age=259200")
 		w.Write(item.Value)
 		return
 	}
@@ -222,15 +223,16 @@ func handleRender(w http.ResponseWriter, r *http.Request, size int) {
 		style = "grayscale"
 		img = filters.FilterGrayscale(c, img)
 	}
-	// Set the headers
-	w.Header().Set("Content-type", "image/png")
-	w.Header().Set("Cache-control", "public, max-age=259200")
+	
 	buffer := bytes.NewBuffer([]byte{})
 	png.Encode(buffer, img)
 	w.Write(buffer.Bytes())
-	mcItem := &memcache.Item{
-		Key:   (string)(blobkey) + "_" + style + "_" + string(size),
-		Value: buffer.Bytes(),
+	
+	if buffer.Len() < (1000 * 1000 - 300) {
+		mcItem := &memcache.Item{
+			Key:   (string)(blobkey) + "_" + style + "_" + string(size),
+			Value: buffer.Bytes(),
+		}
+		memcache.Add(c, mcItem)
 	}
-	memcache.Add(c, mcItem)
 }
