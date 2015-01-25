@@ -19,10 +19,10 @@ import (
 )
 
 var templates = map[string]*template.Template{
-	"prepare": template.Must(template.ParseFiles("templates/prepare.html", "templates/scripts.html", 
-		"templates/navbar.html" , "templates/footer.html")),
-	"home":    template.Must(template.ParseFiles("templates/home.html", "templates/scripts.html", "templates/navbar.html", "templates/footer.html")),
-	"share":   template.Must(template.ParseFiles("templates/share.html", "templates/scripts.html", "templates/navbar.html", "templates/footer.html")),
+	"prepare": template.Must(template.ParseFiles("templates/prepare.html", "templates/scripts.html",
+		"templates/navbar.html", "templates/footer.html")),
+	"home":  template.Must(template.ParseFiles("templates/home.html", "templates/scripts.html", "templates/navbar.html", "templates/footer.html")),
+	"share": template.Must(template.ParseFiles("templates/share.html", "templates/scripts.html", "templates/navbar.html", "templates/footer.html")),
 }
 
 func init() {
