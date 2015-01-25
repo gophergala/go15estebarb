@@ -38,6 +38,7 @@ func ImagesPOST(c appengine.Context,
 		Size:         blobinfo.Size,
 	}
 	key := datastore.NewKey(c, "Images", data.GenerateID(), 0, nil)
+	
 	return datastore.Put(c, key, data)
 }
 
@@ -50,22 +51,34 @@ func Images_OfUser_GET(c appengine.Context, usr *user.User) ([]Image, []*datasto
 	return images, keys, err
 }
 
-func Images_UpdateStyle(c appengine.Context,
-		usr *user.User,
-		blobkey string,
-		newstyle string) (* datastore.Key, error){
-	// Retrieve key
+func Images_GetOne(c appengine.Context, usr *user.User, blobkey string)(*Image, error){
 	q := datastore.NewQuery("Images").
-		Filter("OwnerID =", usr.ID).
-		Filter("Blobkey =", blobkey)
+	Filter("OwnerID =", usr.ID).
+	Filter("Blobkey =", blobkey)
 	var images []Image
 	_, err := q.GetAll(c, &images)
 	if err != nil && len(images)>0{
 		return nil, err
 	}
 	m := images[0]
+	return &m, nil
+}
+
+func Images_UpdateStyle(c appengine.Context,
+		usr *user.User,
+		blobkey string,
+		newstyle string) (* datastore.Key, error){
+	// Retrieve key
+	m, err := Images_GetOne(c, usr, blobkey)
+	if err != nil{
+		return nil, err
+	}
 	
 	// Updates the value
+	if m.Style == newstyle || m.OwnerID != usr.ID{
+		return nil, nil
+	}
+	
 	m.Style = newstyle
 	key := datastore.NewKey(c, "Images", m.GenerateID(), 0, nil)
 	return datastore.Put(c, key, &m)
@@ -74,6 +87,13 @@ func Images_UpdateStyle(c appengine.Context,
 func Images_Delete(c appengine.Context,
 	usr *user.User,
 	blobkey string) error{
+	m, err := Images_GetOne(c, usr, blobkey)
+	if err != nil{
+		return err
+	}
+	if m.OwnerID != usr.ID{
+		return nil
+	}
 	key := datastore.NewKey(c, "Images", GenID(blobkey, usr.ID), 0, nil)
 	return datastore.Delete(c, key)
 }

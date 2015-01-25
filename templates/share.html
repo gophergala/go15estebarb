@@ -10,9 +10,6 @@
 {{template "scripts" .}}
 <div class="container">
     <h1>Share or download your paint</h1>
-    {{ if .error }}
-    {{.error}}
-    {{ end }}
     <img src="/render?blobKey={{.imgkey}}&style={{.style}}&size=800" alt="{{.style}}" class="img-responsive">
     <div class="row">
         <div class="col-sm-6">

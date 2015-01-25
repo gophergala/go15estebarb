@@ -65,6 +65,10 @@ func handleUpload(w http.ResponseWriter, r *http.Request) {
 
 func handleDelete(w http.ResponseWriter, r *http.Request) {
 	c := appengine.NewContext(r)
+	if r.Method != "POST"{
+		serveError(c, w, errors.New("Ilegal method attemp"))
+		return
+	}
 	r.ParseForm()
 	blobkey := r.FormValue("blobKey")
 	usr := user.Current(c)

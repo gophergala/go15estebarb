@@ -17,6 +17,7 @@
     {{ end }}
     
     {{if .IsLogged}}
+    <div class="well">
     <p>Upload a image to repaint it! (accepting jpeg, png and gif)</p>
     <form method="POST" action="{{.uploadURL}}" enctype="multipart/form-data" class="form-horizontal">
         <div class="form-group">
@@ -25,17 +26,20 @@
                 <input type="file" name="file" id="file" class="form-control">
             </div>
         </div>
-        <input type="submit" name="submit" value="Submit">
+        <input type="submit" name="submit" value="Upload" class="btn btn-primary">
     </form>
+    </div>
     
     <h2>Images of {{.UserName}} <a class="btn btn-warning btn-xs" href="{{.LogoutURL}}">Logout</a> </h2>
     <div class="row">
         {{ range $key, $value := .Images }}
         <div class="col-sm-6 col-md-4">
             <div class="thumbnail">
-                {{$value}}
-                <img class="img-responsive img-thumbnail" src="/render?blobKey={{$value.Blobkey}}&style={{$value.Style}}"
-                     alt="voronoi">
+                <a href="/share?blobKey={{$value.Blobkey}}&style={{$value.Style}}">
+                    <img class="img-responsive img-thumbnail"
+                         src="/render?blobKey={{$value.Blobkey}}&style={{$value.Style}}"
+                     alt="{{$value.Style}}">
+                </a>
                 <div class="row">
                 <a href="/prepare?blobKey={{$value.Blobkey}}" class="col-sm-offset-1 col-sm-4 btn btn-info">Change
                     style</a>
