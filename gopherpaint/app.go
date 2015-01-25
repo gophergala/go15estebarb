@@ -3,7 +3,6 @@ package gopherpaint
 import (
 	"appengine"
 	"appengine/blobstore"
-	"appengine/delay"
 	"filters"
 	"html/template"
 	"image"
@@ -19,12 +18,6 @@ import (
 )
 
 
-
-var processImageGrayscale = delay.Func("grayscale", filters.DoProcessingGray)
-var processImageVoronoi = delay.Func("voronoi", filters.DoProcessingVoronoi)
-var processImageOilPaint = delay.Func("oilpaint", filters.DoProcessingOilPaint)
-var processImagePainterly = delay.Func("painterly", filters.DoProcessingPainterly)
-var processImageMultiPainterly = delay.Func("multipaint", filters.DoProcessingMultiPainterly)
 
 var templates = map[string]*template.Template{
 	"prepare": template.Must(template.ParseFiles("templates/prepare.html", "templates/scripts.html")),
