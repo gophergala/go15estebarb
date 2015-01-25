@@ -37,8 +37,6 @@ func FilterPainterly(c appengine.Context, m image.Image) image.Image {
 	return canvas
 }
 
-
-
 type MyStroke struct {
 	Color  color.Color
 	Point  image.Point

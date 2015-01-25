@@ -3,15 +3,15 @@ package filters
 import (
 	"appengine"
 	"appengine/blobstore"
+	"github.com/disintegration/gift"
 	"github.com/disintegration/imaging"
+	colorful "github.com/lucasb-eyer/go-colorful"
 	"image"
 	"image/color"
+	_ "image/gif"
 	_ "image/jpeg"
 	"image/png"
-	_ "image/gif"
 	"math"
-	"github.com/disintegration/gift"
-	colorful "github.com/lucasb-eyer/go-colorful"
 	"math/rand"
 )
 
@@ -159,17 +159,17 @@ func IntMin(a, b int) int {
 }
 
 var sobelHCoefficients = []float64{
-1.0, 0.0, -1.0,
-2.0, 0.0, -2.0,
-1.0, 0.0, -1.0,
+	1.0, 0.0, -1.0,
+	2.0, 0.0, -2.0,
+	1.0, 0.0, -1.0,
 }
 var sobelVCoefficients = []float64{
-1.0, 2.0, 1.0,
-0.0, 0.0, 0.0,
--1.0, -2.0, -1.0,
+	1.0, 2.0, 1.0,
+	0.0, 0.0, 0.0,
+	-1.0, -2.0, -1.0,
 }
 
-func SobelV(src image.Image) *image.RGBA{
+func SobelV(src image.Image) *image.RGBA {
 	// Apply the vertical sobel filter to an image.
 	g := gift.New(
 		gift.Convolution(
@@ -186,40 +186,40 @@ func SobelV(src image.Image) *image.RGBA{
 	return dst
 }
 
-func SobelH(src image.Image) *image.RGBA{
+func SobelH(src image.Image) *image.RGBA {
 	// Apply the vertical sobel filter to an image.
 	g := gift.New(
-	gift.Convolution(
-		[]float32{
-		1.0, 0.0, -1.0,
-		2.0, 0.0, -2.0,
-		1.0, 0.0, -1.0,
-	},
-		false, false, true, 0.0,
-	),
+		gift.Convolution(
+			[]float32{
+				1.0, 0.0, -1.0,
+				2.0, 0.0, -2.0,
+				1.0, 0.0, -1.0,
+			},
+			false, false, true, 0.0,
+		),
 	)
 	dst := image.NewRGBA(g.Bounds(src.Bounds()))
 	g.Draw(dst, src)
 	return dst
 }
 
-func ColorToGray(c color.Color)uint8{
+func ColorToGray(c color.Color) uint8 {
 	return color.GrayModel.Convert(c).(color.Gray).Y
 }
 
-func GradientData(src image.Image)([][]float64, [][]float64){
+func GradientData(src image.Image) ([][]float64, [][]float64) {
 	xs, ys := src.Bounds().Max.X, src.Bounds().Max.Y
 	mag := make([][]float64, ys)
 	ori := make([][]float64, ys)
 	sobelH := SobelH(src)
 	sobelV := SobelV(src)
-	for y := 0; y < ys; y++{
+	for y := 0; y < ys; y++ {
 		magrow := make([]float64, xs)
 		orirow := make([]float64, xs)
-		for x := 0; x < xs; x++{
-			GX := float64(ColorToGray(sobelH.At(x,y)))
-			GY := float64(ColorToGray(sobelV.At(x,y)))
-			magrow[x] = math.Sqrt(GX*GX+GY*GY)
+		for x := 0; x < xs; x++ {
+			GX := float64(ColorToGray(sobelH.At(x, y)))
+			GY := float64(ColorToGray(sobelV.At(x, y)))
+			magrow[x] = math.Sqrt(GX*GX + GY*GY)
 			orirow[x] = math.Atan2(GY, GX)
 		}
 		mag[y] = magrow
@@ -228,7 +228,7 @@ func GradientData(src image.Image)([][]float64, [][]float64){
 	return mag, ori
 }
 
-func ColorDistance(A, B color.Color)float64{
+func ColorDistance(A, B color.Color) float64 {
 	ar, ag, ab, aa := A.RGBA()
 	br, bg, bb, ba := B.RGBA()
 	dr, dg, db, da := float64(ar-br), float64(ag-bg), float64(ab-bb), float64(aa-ba)
@@ -242,7 +242,7 @@ func ImageDifference(A *image.RGBA, B image.Image) [][]float64 {
 	for y := 0; y < ys; y++ {
 		rowdif := make([]float64, xs)
 		for x := 0; x < xs; x++ {
-			rowdif[x] = ColorDistance(A.At(x,y), B.At(x, y))
+			rowdif[x] = ColorDistance(A.At(x, y), B.At(x, y))
 		}
 		res[y] = rowdif
 	}
@@ -251,40 +251,36 @@ func ImageDifference(A *image.RGBA, B image.Image) [][]float64 {
 
 // Generates a new color based on a given color and the jitter
 // for a painting style.
-func RandomizeColor(c color.Color, settings *PainterlySettings) color.NRGBA{
+func RandomizeColor(c color.Color, settings *PainterlySettings) color.NRGBA {
 	//sty := settings.Style
 	//r,g,b,_ := c.RGBA()
 	//return color.NRGBA{uint8(r/255), uint8(g/255), uint8(b/255), uint8(sty.Opacity*255)}
 	sty := settings.Style
-	r,g,b,_ := c.RGBA()
-	R := Clamp64(0,rand.NormFloat64() * sty.JitterRed * 65535/2 + float64(r),65535)
-	G := Clamp64(0,rand.NormFloat64() * sty.JitterGreen * 65535/2 + float64(g),65535)
-	B := Clamp64(0,rand.NormFloat64() * sty.JitterBlue * 65535/2 + float64(b),65535)
-	
-	n := colorful.Color{R/65535, G/65535, B/65535}
+	r, g, b, _ := c.RGBA()
+	R := Clamp64(0, rand.NormFloat64()*sty.JitterRed*65535/2+float64(r), 65535)
+	G := Clamp64(0, rand.NormFloat64()*sty.JitterGreen*65535/2+float64(g), 65535)
+	B := Clamp64(0, rand.NormFloat64()*sty.JitterBlue*65535/2+float64(b), 65535)
+
+	n := colorful.Color{R / 65535, G / 65535, B / 65535}
 	h, s, v := n.Hsv()
-	H := Overflow64(0,rand.NormFloat64() * sty.JitterHue * 45 + h,360)
-	S := Clamp64(0,rand.NormFloat64() * sty.JitterSaturation * 0.25 + s,1)
-	V := Clamp64(0,rand.NormFloat64() * sty.JitterValue * 0.25 + v,1)
-	
+	H := Overflow64(0, rand.NormFloat64()*sty.JitterHue*45+h, 360)
+	S := Clamp64(0, rand.NormFloat64()*sty.JitterSaturation*0.25+s, 1)
+	V := Clamp64(0, rand.NormFloat64()*sty.JitterValue*0.25+v, 1)
+
 	n2 := colorful.Hsv(H, S, V)
 	r2, g2, b2 := n2.RGB255()
-	return color.NRGBA{r2, g2, b2, uint8(sty.Opacity*255)}
+	return color.NRGBA{r2, g2, b2, uint8(sty.Opacity * 255)}
 }
 
-func Clamp64(a, b, c float64) float64{
+func Clamp64(a, b, c float64) float64 {
 	return math.Max(a, math.Min(b, c))
 }
 
-func Overflow64(a, b, c float64) float64{
-	if b < a{
-		return Overflow64(a,b+360,c)		
-	} else if b > c{
-		return Overflow64(a,b-360,c)		
+func Overflow64(a, b, c float64) float64 {
+	if b < a {
+		return Overflow64(a, b+360, c)
+	} else if b > c {
+		return Overflow64(a, b-360, c)
 	}
 	return b
 }
-
-
-
-

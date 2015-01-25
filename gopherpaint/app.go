@@ -6,12 +6,12 @@ import (
 	"appengine/delay"
 	"filters"
 	"html/template"
+	"image"
+	_ "image/gif"
+	_ "image/jpeg"
+	"image/png"
 	"io"
 	"net/http"
-	"image"
-	"image/png"
-	_ "image/jpeg"
-	_ "image/gif"
 )
 
 var processImageGrayscale = delay.Func("grayscale", filters.DoProcessingGray)
@@ -19,7 +19,6 @@ var processImageVoronoi = delay.Func("voronoi", filters.DoProcessingVoronoi)
 var processImageOilPaint = delay.Func("oilpaint", filters.DoProcessingOilPaint)
 var processImagePainterly = delay.Func("painterly", filters.DoProcessingPainterly)
 var processImageMultiPainterly = delay.Func("multipaint", filters.DoProcessingMultiPainterly)
-
 
 func init() {
 	http.HandleFunc("/upload", handleUpload)
@@ -56,30 +55,28 @@ func handleUpload(w http.ResponseWriter, r *http.Request) {
 	// We are going to create several paintings:
 	//*
 	processImageMultiPainterly.Call(c, &filters.PainterlySettings{
-			Style: filters.StyleImpressionist,
-			Blobkey: file[0].BlobKey,
-	})
-	
-	
-	processImageMultiPainterly.Call(c, &filters.PainterlySettings{
-		Style: filters.StyleExpressionist,
-		Blobkey: file[0].BlobKey,
-	})
-	
-	
-	processImageMultiPainterly.Call(c, &filters.PainterlySettings{
-		Style: filters.StyleColoristWash,
-		Blobkey: file[0].BlobKey,
-	})
-	//*/
-	
-	processImageMultiPainterly.Call(c, &filters.PainterlySettings{
-		Style: filters.StylePointillist,
+		Style:   filters.StyleImpressionist,
 		Blobkey: file[0].BlobKey,
 	})
 
 	processImageMultiPainterly.Call(c, &filters.PainterlySettings{
-		Style: filters.StylePsychedelic,
+		Style:   filters.StyleExpressionist,
+		Blobkey: file[0].BlobKey,
+	})
+
+	processImageMultiPainterly.Call(c, &filters.PainterlySettings{
+		Style:   filters.StyleColoristWash,
+		Blobkey: file[0].BlobKey,
+	})
+	//*/
+
+	processImageMultiPainterly.Call(c, &filters.PainterlySettings{
+		Style:   filters.StylePointillist,
+		Blobkey: file[0].BlobKey,
+	})
+
+	processImageMultiPainterly.Call(c, &filters.PainterlySettings{
+		Style:   filters.StylePsychedelic,
 		Blobkey: file[0].BlobKey,
 	})
 
@@ -96,38 +93,38 @@ func handlePreview(w http.ResponseWriter, r *http.Request) {
 	style := r.FormValue("style")
 	rimg := blobstore.NewReader(c, blobkey)
 	img, _, err := image.Decode(rimg)
-	if err != nil{
+	if err != nil {
 		return
 	}
 	img = filters.RescaleImage(img, 300)
-	switch style{
+	switch style {
 	case "voronoi":
 		img = filters.FilterVoronoi(c, img)
 	case "oilpaint":
 		img = filters.FilterOilPaint(c, img)
 	case "impresionist":
 		img = filters.FilterPainterlyStyles(c, img, &filters.PainterlySettings{
-			Style: filters.StyleImpressionist,
+			Style:   filters.StyleImpressionist,
 			Blobkey: blobkey,
 		})
 	case "expresionist":
 		img = filters.FilterPainterlyStyles(c, img, &filters.PainterlySettings{
-			Style: filters.StyleExpressionist,
+			Style:   filters.StyleExpressionist,
 			Blobkey: blobkey,
 		})
 	case "coloristwash":
 		img = filters.FilterPainterlyStyles(c, img, &filters.PainterlySettings{
-			Style: filters.StyleColoristWash,
+			Style:   filters.StyleColoristWash,
 			Blobkey: blobkey,
 		})
 	case "pointillist":
 		img = filters.FilterPainterlyStyles(c, img, &filters.PainterlySettings{
-			Style: filters.StylePointillist,
+			Style:   filters.StylePointillist,
 			Blobkey: blobkey,
 		})
 	case "psychedelic":
 		img = filters.FilterPainterlyStyles(c, img, &filters.PainterlySettings{
-			Style: filters.StylePsychedelic,
+			Style:   filters.StylePsychedelic,
 			Blobkey: blobkey,
 		})
 	default:
