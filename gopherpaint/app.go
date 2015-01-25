@@ -14,6 +14,8 @@ var processImageGrayscale = delay.Func("grayscale", filters.DoProcessingGray)
 var processImageVoronoi = delay.Func("voronoi", filters.DoProcessingVoronoi)
 var processImageOilPaint = delay.Func("oilpaint", filters.DoProcessingOilPaint)
 var processImagePainterly = delay.Func("painterly", filters.DoProcessingPainterly)
+var processImageMultiPainterly = delay.Func("multipaint", filters.DoProcessingMultiPainterly)
+
 
 func init() {
 	http.HandleFunc("/upload", handleUpload)
@@ -42,10 +44,27 @@ func handleUpload(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/", http.StatusFound)
 		return
 	}
-	processImageGrayscale.Call(c, file[0].BlobKey)
-	processImageVoronoi.Call(c, file[0].BlobKey)
-	processImageOilPaint.Call(c, file[0].BlobKey)
-	processImagePainterly.Call(c, file[0].BlobKey)
+	//processImageGrayscale.Call(c, file[0].BlobKey)
+	//processImageVoronoi.Call(c, file[0].BlobKey)
+	//processImageOilPaint.Call(c, file[0].BlobKey)
+	//processImagePainterly.Call(c, file[0].BlobKey)
+	// We are going to create several paintings:
+	processImageMultiPainterly.Call(c, &filters.PainterlySettings{
+			Style: filters.StyleImpressionist,
+			Blobkey: file[0].BlobKey,
+	})
+	processImageMultiPainterly.Call(c, &filters.PainterlySettings{
+		Style: filters.StyleExpressionist,
+		Blobkey: file[0].BlobKey,
+	})
+	processImageMultiPainterly.Call(c, &filters.PainterlySettings{
+		Style: filters.StyleColoristWash,
+		Blobkey: file[0].BlobKey,
+	})
+	processImageMultiPainterly.Call(c, &filters.PainterlySettings{
+		Style: filters.StylePointillist,
+		Blobkey: file[0].BlobKey,
+	})
 	http.Redirect(w, r, "/serve/?blobKey="+string(file[0].BlobKey), http.StatusFound)
 }
 

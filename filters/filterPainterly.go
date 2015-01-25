@@ -37,22 +37,7 @@ func FilterPainterly(c appengine.Context, m image.Image) image.Image {
 	return canvas
 }
 
-func imageDifference(A *image.RGBA, B image.Image) [][]float64 {
-	ys := A.Bounds().Max.Y
-	xs := A.Bounds().Max.X
-	res := make([][]float64, ys)
-	for y := 0; y < ys; y++ {
-		rowdif := make([]float64, xs)
-		for x := 0; x < xs; x++ {
-			ar, ag, ab, aa := A.At(x, y).RGBA()
-			br, bg, bb, ba := B.At(x, y).RGBA()
-			dr, dg, db, da := float64(ar-br), float64(ag-bg), float64(ab-bb), float64(aa-ba)
-			rowdif[x] = math.Sqrt(dr*dr + dg*dg + db*db + da*da)
-		}
-		res[y] = rowdif
-	}
-	return res
-}
+
 
 type MyStroke struct {
 	Color  color.Color
@@ -62,7 +47,7 @@ type MyStroke struct {
 
 func paintLayer(cnv *image.RGBA, refImage image.Image, radius int, T float64) image.Image {
 	strokes := make([]MyStroke, 0)
-	D := imageDifference(cnv, refImage)
+	D := ImageDifference(cnv, refImage)
 
 	ys := cnv.Bounds().Max.Y
 	xs := cnv.Bounds().Max.X
