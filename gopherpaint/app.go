@@ -15,6 +15,7 @@ import (
 	"image/png"
 	"io"
 	"net/http"
+	"time"
 )
 
 var templates = map[string]*template.Template{
@@ -24,6 +25,7 @@ var templates = map[string]*template.Template{
 }
 
 func init() {
+	http.HandleFunc("/delete", handleDelete)
 	http.HandleFunc("/upload", handleUpload)
 	http.HandleFunc("/prepare", handleSetupPaint)
 	http.HandleFunc("/render", handlePreview)
@@ -74,36 +76,30 @@ func handleDelete(w http.ResponseWriter, r *http.Request) {
 	if err != nil{
 		serveError(c, w, err)
 	}
+	// Need for sleep. Or we aren't going to delete the image
+	// before the next rendering of frontpage.
+	time.Sleep(500 * time.Millisecond)
 	http.Redirect(w,r, "/", http.StatusFound)
 }
 
 func handleShare(w http.ResponseWriter, r *http.Request) {
-	//blobstore.Send(w, appengine.BlobKey(r.FormValue("blobKey")))
-	//c := appengine.NewContext(r)
-	context := make(map[string]string)
-	//uploadURL, err := blobstore.UploadURL(c, "/upload", nil)
-	//context["uploadURL"] = uploadURL
-	context["imgkey"] = r.FormValue("blobKey")
-	context["style"] = r.FormValue("style")
+	c := appengine.NewContext(r)
+	context := make(map[string]interface{})
+	r.ParseForm()
+	imgkey := r.FormValue("blobKey")
+	context["imgkey"] = imgkey
+	newstyle := r.FormValue("style")
+	context["style"] = newstyle
+	u := user.Current(c)
+	if u != nil{
+		_, err := Images_UpdateStyle(c, u, imgkey, newstyle)
+		if err != nil {
+			context["error"] = err
+		}
+	}
+	
 	templates["share"].Execute(w, context)
 }
-
-/*
-type StyleInfo struct{
-	Name string
-	ID string
-}
-var ListOfStyles = []StyleInfo{
-	StyleInfo{"Voronoi", "voronoi"},
-	StyleInfo{"Oil Paint","oilpaint"},
-	StyleInfo{"Impresionist","impresionist"},
-	StyleInfo{"Expresionist","expresionist"},
-	StyleInfo{"Colorist Wash","coloristwash"},
-	StyleInfo{"Pointillist","pointillist"},
-	StyleInfo{"Psychedelic","psychedelic"},
-	StyleInfo{"Grayscale","grayscale"},
-}
-*/
 
 func handleSetupPaint(w http.ResponseWriter, r *http.Request) {
 	//c := appengine.NewContext(r)

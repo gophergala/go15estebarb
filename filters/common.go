@@ -1,8 +1,6 @@
 package filters
 
 import (
-	"appengine"
-	"appengine/blobstore"
 	"github.com/disintegration/gift"
 	"github.com/disintegration/imaging"
 	colorful "github.com/lucasb-eyer/go-colorful"
@@ -10,74 +8,10 @@ import (
 	"image/color"
 	_ "image/gif"
 	_ "image/jpeg"
-	"image/png"
+	_ "image/png"
 	"math"
 	"math/rand"
 )
-
-func DoProcessingGray(c appengine.Context, blobkey appengine.BlobKey) {
-	r := blobstore.NewReader(c, blobkey)
-	img, _, err := image.Decode(r)
-	if err != nil {
-		c.Errorf("%v", err)
-	}
-	img = RescaleImage(img, 800)
-	pic := FilterGrayscale(c, img)
-	saveImage(c, pic)
-}
-
-func DoProcessingVoronoi(c appengine.Context, blobkey appengine.BlobKey) {
-	r := blobstore.NewReader(c, blobkey)
-	img, _, err := image.Decode(r)
-	if err != nil {
-		c.Errorf("%v", err)
-	}
-	img = RescaleImage(img, 800)
-	pic := FilterVoronoi(c, img)
-	saveImage(c, pic)
-}
-
-func DoProcessingOilPaint(c appengine.Context, blobkey appengine.BlobKey) {
-	r := blobstore.NewReader(c, blobkey)
-	img, _, err := image.Decode(r)
-	if err != nil {
-		c.Errorf("%v", err)
-	}
-	img = RescaleImage(img, 800)
-	pic := FilterOilPaint(c, img)
-	saveImage(c, pic)
-}
-
-func DoProcessingPainterly(c appengine.Context, blobkey appengine.BlobKey) {
-	r := blobstore.NewReader(c, blobkey)
-	img, _, err := image.Decode(r)
-	if err != nil {
-		c.Errorf("%v", err)
-	}
-	img = RescaleImage(img, 800)
-	pic := FilterPainterly(c, img)
-	saveImage(c, pic)
-}
-
-func DoProcessingMultiPainterly(c appengine.Context, settings *PainterlySettings) {
-	r := blobstore.NewReader(c, settings.Blobkey)
-	img, _, err := image.Decode(r)
-	if err != nil {
-		c.Errorf("%v", err)
-	}
-	img = RescaleImage(img, 800)
-	pic := FilterPainterlyStyles(c, img, settings)
-	saveImage(c, pic)
-}
-
-func saveImage(c appengine.Context, m image.Image) {
-	w, err := blobstore.Create(c, "image/png")
-	if err != nil {
-		c.Errorf("%v", err)
-	}
-	defer w.Close()
-	png.Encode(w, m)
-}
 
 func RescaleImage(m image.Image, size int) image.Image {
 	bounds := m.Bounds()

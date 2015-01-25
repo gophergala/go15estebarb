@@ -57,18 +57,18 @@ func Images_UpdateStyle(c appengine.Context,
 	// Retrieve key
 	q := datastore.NewQuery("Images").
 		Filter("OwnerID =", usr.ID).
-		Filter("BlobKey =", appengine.BlobKey(blobkey))
-	t:=q.Run(c)
-	var m Image
-	_, err := t.Next(m)
-	if err != nil{
+		Filter("Blobkey =", blobkey)
+	var images []Image
+	_, err := q.GetAll(c, &images)
+	if err != nil && len(images)>0{
 		return nil, err
 	}
+	m := images[0]
 	
 	// Updates the value
 	m.Style = newstyle
 	key := datastore.NewKey(c, "Images", m.GenerateID(), 0, nil)
-	return datastore.Put(c, key, m)
+	return datastore.Put(c, key, &m)
 }
 
 func Images_Delete(c appengine.Context,
