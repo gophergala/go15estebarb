@@ -10,8 +10,8 @@ import (
 	"image/png"
 	"math"
 	"github.com/disintegration/gift"
-	//colorful "github.com/lucasb-eyer/go-colorful"
-	//"math/rand"
+	colorful "github.com/lucasb-eyer/go-colorful"
+	"math/rand"
 )
 
 func DoProcessingGray(c appengine.Context, blobkey appengine.BlobKey) {
@@ -251,10 +251,9 @@ func ImageDifference(A *image.RGBA, B image.Image) [][]float64 {
 // Generates a new color based on a given color and the jitter
 // for a painting style.
 func RandomizeColor(c color.Color, settings *PainterlySettings) color.NRGBA{
-	sty := settings.Style
-	r,g,b,_ := c.RGBA()
-	return color.NRGBA{uint8(r/255), uint8(g/255), uint8(b/255), uint8(sty.Opacity*255)}
-	/*
+	//sty := settings.Style
+	//r,g,b,_ := c.RGBA()
+	//return color.NRGBA{uint8(r/255), uint8(g/255), uint8(b/255), uint8(sty.Opacity*255)}
 	sty := settings.Style
 	r,g,b,_ := c.RGBA()
 	R := Clamp64(0,rand.NormFloat64() * sty.JitterRed * 65535 + float64(r),65535)
@@ -270,7 +269,6 @@ func RandomizeColor(c color.Color, settings *PainterlySettings) color.NRGBA{
 	n2 := colorful.Hsv(H, S, V)
 	r2, g2, b2 := n2.RGB255()
 	return color.NRGBA{r2, g2, b2, uint8(sty.Opacity*255)}
-	*/
 }
 
 func Clamp64(a, b, c float64) float64{
