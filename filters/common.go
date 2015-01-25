@@ -256,15 +256,15 @@ func RandomizeColor(c color.Color, settings *PainterlySettings) color.NRGBA{
 	//return color.NRGBA{uint8(r/255), uint8(g/255), uint8(b/255), uint8(sty.Opacity*255)}
 	sty := settings.Style
 	r,g,b,_ := c.RGBA()
-	R := Clamp64(0,rand.NormFloat64() * sty.JitterRed * 65535 + float64(r),65535)
-	G := Clamp64(0,rand.NormFloat64() * sty.JitterGreen * 65535 + float64(g),65535)
-	B := Clamp64(0,rand.NormFloat64() * sty.JitterBlue * 65535 + float64(b),65535)
+	R := Clamp64(0,rand.NormFloat64() * sty.JitterRed * 65535/2 + float64(r),65535)
+	G := Clamp64(0,rand.NormFloat64() * sty.JitterGreen * 65535/2 + float64(g),65535)
+	B := Clamp64(0,rand.NormFloat64() * sty.JitterBlue * 65535/2 + float64(b),65535)
 	
 	n := colorful.Color{R/65535, G/65535, B/65535}
 	h, s, v := n.Hsv()
-	H := rand.NormFloat64() * sty.JitterHue * 360 + h
-	S := rand.NormFloat64() * sty.JitterSaturation + s
-	V := rand.NormFloat64() * sty.JitterValue + v
+	H := Overflow64(0,rand.NormFloat64() * sty.JitterHue * 45 + h,360)
+	S := Clamp64(0,rand.NormFloat64() * sty.JitterSaturation * 0.1 + s,1)
+	V := Clamp64(0,rand.NormFloat64() * sty.JitterValue * 0.1 + v,1)
 	
 	n2 := colorful.Hsv(H, S, V)
 	r2, g2, b2 := n2.RGB255()
@@ -274,6 +274,16 @@ func RandomizeColor(c color.Color, settings *PainterlySettings) color.NRGBA{
 func Clamp64(a, b, c float64) float64{
 	return math.Max(a, math.Min(b, c))
 }
+
+func Overflow64(a, b, c float64) float64{
+	if b < a{
+		return Overflow64(a,b+360,c)		
+	} else if b > c{
+		return Overflow64(a,b-360,c)		
+	}
+	return b
+}
+
 
 
 

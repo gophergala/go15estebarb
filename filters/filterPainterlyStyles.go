@@ -156,7 +156,6 @@ func paintLayerStyles(cnv *image.RGBA, refImage image.Image, radius int,
 	xs := cnv.Bounds().Max.X
 	fradius := float64(radius)
 	for y := 0; y < ys; y+=int(fradius*settings.Style.GridSize) {
-		c.Infof("row %v of %v", y, ys)
 		for x := 0; x < xs; x+=int(fradius*settings.Style.GridSize) {
 			// Calculates the error near (x,y):
 			areaError := float64(0)

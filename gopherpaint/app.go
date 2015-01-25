@@ -49,31 +49,35 @@ func handleUpload(w http.ResponseWriter, r *http.Request) {
 	//processImageOilPaint.Call(c, file[0].BlobKey)
 	//processImagePainterly.Call(c, file[0].BlobKey)
 	// We are going to create several paintings:
-	/*
+	//*
 	processImageMultiPainterly.Call(c, &filters.PainterlySettings{
 			Style: filters.StyleImpressionist,
 			Blobkey: file[0].BlobKey,
 	})
-	*/
+	
 	
 	processImageMultiPainterly.Call(c, &filters.PainterlySettings{
 		Style: filters.StyleExpressionist,
 		Blobkey: file[0].BlobKey,
 	})
-	/*
+	
+	
 	processImageMultiPainterly.Call(c, &filters.PainterlySettings{
 		Style: filters.StyleColoristWash,
 		Blobkey: file[0].BlobKey,
 	})
+	//*/
+	
 	processImageMultiPainterly.Call(c, &filters.PainterlySettings{
 		Style: filters.StylePointillist,
 		Blobkey: file[0].BlobKey,
 	})
+
 	processImageMultiPainterly.Call(c, &filters.PainterlySettings{
 		Style: filters.StylePsychedelic,
 		Blobkey: file[0].BlobKey,
 	})
-	*/
+
 	http.Redirect(w, r, "/serve/?blobKey="+string(file[0].BlobKey), http.StatusFound)
 }
 
