@@ -33,9 +33,16 @@
         {{ range $key, $value := .Images }}
         <div class="col-sm-6 col-md-4">
             <div class="thumbnail">
-                <a href="/prepare?blobKey={{$value.key}}">
-                    <img src="/render?blobKey={{$value.key}}&style={{$value.style}}" alt="voronoi">
-                </a>
+                <img class="img-responsive img-thumbnail" src="/render?blobKey={{$value.Blobkey}}&style={{$value.Style}}"
+                     alt="voronoi">
+                <div class="row">
+                <a href="/prepare?blobKey={{$value.Blobkey}}" class="col-sm-offset-1 col-sm-4 btn btn-info">Change
+                    style</a>
+                <form>
+                <input type="submit" name="submit" value="Delete" href="/prepare?blobKey={{$value.Blobkey}}"
+                       class="col-sm-offset-2 col-sm-4 btn btn-danger">
+                </form>
+                </div>
             </div>
         </div>
         {{ end }}

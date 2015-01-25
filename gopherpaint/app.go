@@ -45,13 +45,36 @@ func handleUpload(w http.ResponseWriter, r *http.Request) {
 		serveError(c, w, err)
 		return
 	}
+	
+	// if not logged in then fail
+	u := user.Current(c)
+	if u == nil{
+		http.Redirect(w,r,"/", http.StatusFound)
+	}
 
 	file := blobs["file"]
 	if len(file) == 0 {
 		serveError(c, w, errors.New("no files uploaded"))
 		return
 	}
+	ImagesPOST(c,u,file[0],"grayscale")
 	http.Redirect(w, r, "/prepare?blobKey="+string(file[0].BlobKey), http.StatusFound)
+}
+
+func handleDelete(w http.ResponseWriter, r *http.Request) {
+	c := appengine.NewContext(r)
+	r.ParseForm()
+	blobkey := r.FormValue("blobKey")
+	usr := user.Current(c)
+	if usr == nil{
+		http.Redirect(w,r, "/", http.StatusFound)
+		return
+	}
+	err := Images_Delete(c, usr, blobkey)
+	if err != nil{
+		serveError(c, w, err)
+	}
+	http.Redirect(w,r, "/", http.StatusFound)
 }
 
 func handleShare(w http.ResponseWriter, r *http.Request) {
@@ -61,16 +84,32 @@ func handleShare(w http.ResponseWriter, r *http.Request) {
 	//uploadURL, err := blobstore.UploadURL(c, "/upload", nil)
 	//context["uploadURL"] = uploadURL
 	context["imgkey"] = r.FormValue("blobKey")
+	context["style"] = r.FormValue("style")
 	templates["share"].Execute(w, context)
 }
 
+/*
+type StyleInfo struct{
+	Name string
+	ID string
+}
+var ListOfStyles = []StyleInfo{
+	StyleInfo{"Voronoi", "voronoi"},
+	StyleInfo{"Oil Paint","oilpaint"},
+	StyleInfo{"Impresionist","impresionist"},
+	StyleInfo{"Expresionist","expresionist"},
+	StyleInfo{"Colorist Wash","coloristwash"},
+	StyleInfo{"Pointillist","pointillist"},
+	StyleInfo{"Psychedelic","psychedelic"},
+	StyleInfo{"Grayscale","grayscale"},
+}
+*/
+
 func handleSetupPaint(w http.ResponseWriter, r *http.Request) {
-	//blobstore.Send(w, appengine.BlobKey(r.FormValue("blobKey")))
 	//c := appengine.NewContext(r)
-	context := make(map[string]string)
-	//uploadURL, err := blobstore.UploadURL(c, "/upload", nil)
-	//context["uploadURL"] = uploadURL
+	context := make(map[string]interface{})
 	context["imgkey"] = r.FormValue("blobKey")
+	//context["ListOfStyles"] = ListOfStyles
 	templates["prepare"].Execute(w, context)
 }
 
@@ -95,12 +134,19 @@ func handler(w http.ResponseWriter, r *http.Request) {
 			serveError(c, w, err)
 			return
 		}
+		pics, _, err := Images_OfUser_GET(c, u)
+		if err != nil {
+			serveError(c, w, err)
+			return
+		}
+		context["Images"] = pics
 	}
 	uploadURL, err := blobstore.UploadURL(c, "/upload", nil)
 	context["uploadURL"] = uploadURL.Path
 	if err != nil {
 		serveError(c, w, err)
 	}
+	w.Header().Set("Cache-Control", "private, no-store, max-age=0, no-cache, must-revalidate, post-check=0, pre-check=0")
 	templates["home"].Execute(w, context)
 }
 
