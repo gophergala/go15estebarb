@@ -15,7 +15,10 @@ import (
 	"errors"
 	"appengine/memcache"
 	"bytes"
+	"appengine/user"
 )
+
+
 
 var processImageGrayscale = delay.Func("grayscale", filters.DoProcessingGray)
 var processImageVoronoi = delay.Func("voronoi", filters.DoProcessingVoronoi)
@@ -24,14 +27,16 @@ var processImagePainterly = delay.Func("painterly", filters.DoProcessingPainterl
 var processImageMultiPainterly = delay.Func("multipaint", filters.DoProcessingMultiPainterly)
 
 var templates = map[string]*template.Template{
-	"prepare": template.Must(template.ParseFiles("templates/prepare.html")),
-	"home": template.Must(template.ParseFiles("templates/home.html")),
+	"prepare": template.Must(template.ParseFiles("templates/prepare.html", "templates/scripts.html")),
+	"home": template.Must(template.ParseFiles("templates/home.html", "templates/scripts.html")),
+	"share": template.Must(template.ParseFiles("templates/share.html", "templates/scripts.html")),
 }
 
 func init() {
 	http.HandleFunc("/upload", handleUpload)
 	http.HandleFunc("/prepare", handleSetupPaint)
-	http.HandleFunc("/preview", handlePreview)
+	http.HandleFunc("/render", handlePreview)
+	http.HandleFunc("/share", handleShare)
 	http.HandleFunc("/", handler)
 }
 
@@ -55,40 +60,18 @@ func handleUpload(w http.ResponseWriter, r *http.Request) {
 		serveError(c, w, errors.New("no files uploaded"))
 		return
 	}
-	/*
-	//processImageGrayscale.Call(c, file[0].BlobKey)
-	processImageVoronoi.Call(c, file[0].BlobKey)
-	processImageOilPaint.Call(c, file[0].BlobKey)
-	//processImagePainterly.Call(c, file[0].BlobKey)
-	// We are going to create several paintings:
-
-	processImageMultiPainterly.Call(c, &filters.PainterlySettings{
-		Style:   filters.StyleImpressionist,
-		Blobkey: file[0].BlobKey,
-	})
-
-	processImageMultiPainterly.Call(c, &filters.PainterlySettings{
-		Style:   filters.StyleExpressionist,
-		Blobkey: file[0].BlobKey,
-	})
-
-	processImageMultiPainterly.Call(c, &filters.PainterlySettings{
-		Style:   filters.StyleColoristWash,
-		Blobkey: file[0].BlobKey,
-	})
-
-	processImageMultiPainterly.Call(c, &filters.PainterlySettings{
-		Style:   filters.StylePointillist,
-		Blobkey: file[0].BlobKey,
-	})
-
-	processImageMultiPainterly.Call(c, &filters.PainterlySettings{
-		Style:   filters.StylePsychedelic,
-		Blobkey: file[0].BlobKey,
-	})
-	*/
-
+	
 	http.Redirect(w, r, "/prepare?blobKey="+string(file[0].BlobKey), http.StatusFound)
+}
+
+func handleShare(w http.ResponseWriter, r *http.Request) {
+	//blobstore.Send(w, appengine.BlobKey(r.FormValue("blobKey")))
+	//c := appengine.NewContext(r)
+	context := make(map[string]string)
+	//uploadURL, err := blobstore.UploadURL(c, "/upload", nil)
+	//context["uploadURL"] = uploadURL
+	context["imgkey"] = r.FormValue("blobKey")
+	templates["share"].Execute(w, context)
 }
 
 func handleSetupPaint(w http.ResponseWriter, r *http.Request) {
@@ -103,8 +86,27 @@ func handleSetupPaint(w http.ResponseWriter, r *http.Request) {
 
 func handler(w http.ResponseWriter, r *http.Request) {
 	c := appengine.NewContext(r)
-	uploadURL, err := blobstore.UploadURL(c, "/upload", nil)
 	context := make(map[string]interface{})
+	u := user.Current(c)
+	var err error
+	if u == nil {
+		url, err := user.LoginURL(c, r.URL.String())
+		if err != nil {
+			serveError(c, w, err)
+			return
+		}
+		context["IsLogged"] = false
+		context["LoginURL"] = url
+	}else{
+		context["IsLogged"] = true
+		context["UserID"] = u.Email
+		context["LogoutURL"], err = user.LogoutURL(c, "/")
+		if err != nil {
+			serveError(c, w, err)
+			return
+		}
+	}
+	uploadURL, err := blobstore.UploadURL(c, "/upload", nil)
 	context["uploadURL"] = uploadURL.Path
 	if err != nil {
 		serveError(c, w, err)
@@ -113,17 +115,28 @@ func handler(w http.ResponseWriter, r *http.Request) {
 }
 
 func handlePreview(w http.ResponseWriter, r *http.Request) {
-	handleRender(w, r, 300)
+	size := 200
+	switch r.FormValue("size"){
+	case "800":
+		size = 800
+	default:
+		size = 200
+	}
+	handleRender(w, r, size)
 }
 
-func handlePaintShareable(w http.ResponseWriter, r *http.Request) {
-	handleRender(w, r, 800)
-}
+
 
 func handleRender(w http.ResponseWriter, r *http.Request, size int) {
 	c := appengine.NewContext(r)
+	r.ParseForm()
 	blobkey := (appengine.BlobKey)(r.FormValue("blobKey"))
+	attachment :=r.FormValue("attachment")
 	style := r.FormValue("style")
+	
+	if attachment == "1"{
+		w.Header().Set("Content-Disposition", "attachment")
+	}
 	
 	// First tries to retrieve it from memcache:
 	item, err := memcache.Get(c, (string)(blobkey) + "_" + style+"_"+string(size))
@@ -172,6 +185,7 @@ func handleRender(w http.ResponseWriter, r *http.Request, size int) {
 			Blobkey: blobkey,
 		})
 	default:
+		style="grayscale"
 		img = filters.FilterGrayscale(c, img)
 	}
 	// Set the headers

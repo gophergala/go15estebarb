@@ -7,6 +7,7 @@
     <script src="//maxcdn.bootstrapcdn.com/bootstrap/3.3.2/js/bootstrap.min.js"></script>
 </head>
 <body>
+{{template "scripts" .}}
 <div class="container">
 <h1>Painting Styles</h1>
 <p>Please select a painting style</p>
@@ -14,7 +15,7 @@
 <div class="row">
     <div class="col-sm-6 col-md-4">
         <div class="thumbnail">
-            <img src="/preview?blobKey={{.imgkey}}&style=voronoi" alt="voronoi">
+            <img src="/render?blobKey={{.imgkey}}&style=voronoi" alt="voronoi">
             <div class="caption">
                 <h3>Voronoi</h3>
             </div>
@@ -22,7 +23,7 @@
     </div>
     <div class="col-sm-6 col-md-4">
         <div class="thumbnail">
-            <img src="/preview?blobKey={{.imgkey}}&style=oilpaint" alt="oilpaint">
+            <img src="/render?blobKey={{.imgkey}}&style=oilpaint" alt="oilpaint">
             <div class="caption">
                 <h3>Oil Paint</h3>
             </div>
@@ -30,7 +31,7 @@
     </div>
     <div class="col-sm-6 col-md-4">
         <div class="thumbnail">
-            <img src="/preview?blobKey={{.imgkey}}&style=impresionist" alt="impresionist">
+            <img src="/render?blobKey={{.imgkey}}&style=impresionist" alt="impresionist">
             <div class="caption">
                 <h3>Impresionist</h3>
             </div>
@@ -38,7 +39,7 @@
     </div>
     <div class="col-sm-6 col-md-4">
         <div class="thumbnail">
-            <img src="/preview?blobKey={{.imgkey}}&style=expresionist" alt="expresionist">
+            <img src="/render?blobKey={{.imgkey}}&style=expresionist" alt="expresionist">
             <div class="caption">
                 <h3>Expresionist</h3>
             </div>
@@ -46,7 +47,7 @@
     </div>
     <div class="col-sm-6 col-md-4">
         <div class="thumbnail">
-            <img src="/preview?blobKey={{.imgkey}}&style=coloristwash" alt="colorist wash">
+            <img src="/render?blobKey={{.imgkey}}&style=coloristwash" alt="colorist wash">
             <div class="caption">
                 <h3>Colorist Wash</h3>
             </div>
@@ -54,7 +55,7 @@
     </div>
     <div class="col-sm-6 col-md-4">
         <div class="thumbnail">
-            <img src="/preview?blobKey={{.imgkey}}&style=pointillist" alt="pointillist">
+            <img src="/render?blobKey={{.imgkey}}&style=pointillist" alt="pointillist">
             <div class="caption">
                 <h3>Pointillist</h3>
             </div>
@@ -62,9 +63,17 @@
     </div>
     <div class="col-sm-6 col-md-4">
         <div class="thumbnail">
-            <img src="/preview?blobKey={{.imgkey}}&style=psychedelic" alt="psychedelic">
+            <img src="/render?blobKey={{.imgkey}}&style=psychedelic" alt="psychedelic">
             <div class="caption">
                 <h3>Psychedelic</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-md-4">
+        <div class="thumbnail">
+            <img src="/render?blobKey={{.imgkey}}&style=grayscale" alt="grayscale">
+            <div class="caption">
+                <h3>Grayscale</h3>
             </div>
         </div>
     </div>

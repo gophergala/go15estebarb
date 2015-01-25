@@ -6,14 +6,41 @@
     <script src="//maxcdn.bootstrapcdn.com/bootstrap/3.3.2/js/bootstrap.min.js"></script>
 </head>
 <body>
+{{template "scripts" .}}
 <div class="container">
+    <img src="/static/logo.png" class="pull-right">
     <h1>GopherPaint</h1>
+
+    {{if not .IsLogged}}
+    <p>Please sign in with your Google Account to upload images.</p>
+    <a href="{{.LoginURL}}" class="btn btn-lg btn-success">Log In</a>
+    {{ end }}
+    
+    {{if .IsLogged}}
     <p>Upload a image to repaint it! (accepting jpeg, png and gif)</p>
-    <form method="POST" action="{{.uploadURL}}" enctype="multipart/form-data">
-        <label for="file">Filename:</label>
-        <input type="file" name="file" id="file">
+    <form method="POST" action="{{.uploadURL}}" enctype="multipart/form-data" class="form-horizontal">
+        <div class="form-group">
+            <label for="file" class="col-sm-2 control-label">Filename:</label>
+            <div class="col-sm-10">
+                <input type="file" name="file" id="file" class="form-control">
+            </div>
+        </div>
         <input type="submit" name="submit" value="Submit">
     </form>
+    
+    <h2>Images of {{.UserID}} <a class="btn btn-warning btn-xs" href="{{.LogoutURL}}">Logout</a> </h2>
+    <div class="row">
+        {{ range $key, $value := .Images }}
+        <div class="col-sm-6 col-md-4">
+            <div class="thumbnail">
+                <a href="/prepare?blobKey={{$value.key}}">
+                    <img src="/render?blobKey={{$value.key}}&style={{$value.style}}" alt="voronoi">
+                </a>
+            </div>
+        </div>
+        {{ end }}
+    </div>
+    {{ end }}
 </div>
 </body>
 </html>
