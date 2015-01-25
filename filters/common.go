@@ -8,6 +8,7 @@ import (
 	"image/color"
 	_ "image/jpeg"
 	"image/png"
+	_ "image/gif"
 	"math"
 	"github.com/disintegration/gift"
 	colorful "github.com/lucasb-eyer/go-colorful"
@@ -20,7 +21,7 @@ func DoProcessingGray(c appengine.Context, blobkey appengine.BlobKey) {
 	if err != nil {
 		c.Errorf("%v", err)
 	}
-	img = rescaleImage(img)
+	img = RescaleImage(img, 800)
 	pic := FilterGrayscale(c, img)
 	saveImage(c, pic)
 }
@@ -31,7 +32,7 @@ func DoProcessingVoronoi(c appengine.Context, blobkey appengine.BlobKey) {
 	if err != nil {
 		c.Errorf("%v", err)
 	}
-	img = rescaleImage(img)
+	img = RescaleImage(img, 800)
 	pic := FilterVoronoi(c, img)
 	saveImage(c, pic)
 }
@@ -42,7 +43,7 @@ func DoProcessingOilPaint(c appengine.Context, blobkey appengine.BlobKey) {
 	if err != nil {
 		c.Errorf("%v", err)
 	}
-	img = rescaleImage(img)
+	img = RescaleImage(img, 800)
 	pic := FilterOilPaint(c, img)
 	saveImage(c, pic)
 }
@@ -53,7 +54,7 @@ func DoProcessingPainterly(c appengine.Context, blobkey appengine.BlobKey) {
 	if err != nil {
 		c.Errorf("%v", err)
 	}
-	img = rescaleImage(img)
+	img = RescaleImage(img, 800)
 	pic := FilterPainterly(c, img)
 	saveImage(c, pic)
 }
@@ -64,7 +65,7 @@ func DoProcessingMultiPainterly(c appengine.Context, settings *PainterlySettings
 	if err != nil {
 		c.Errorf("%v", err)
 	}
-	img = rescaleImage(img)
+	img = RescaleImage(img, 800)
 	pic := FilterPainterlyStyles(c, img, settings)
 	saveImage(c, pic)
 }
@@ -78,14 +79,14 @@ func saveImage(c appengine.Context, m image.Image) {
 	png.Encode(w, m)
 }
 
-func rescaleImage(m image.Image) image.Image {
+func RescaleImage(m image.Image, size int) image.Image {
 	bounds := m.Bounds()
 	ys := bounds.Max.Y
 	xs := bounds.Max.X
 	if xs > ys {
-		return imaging.Resize(m, IntMin(800, xs), 0, imaging.Lanczos)
+		return imaging.Resize(m, IntMin(size, xs), 0, imaging.Lanczos)
 	} else {
-		return imaging.Resize(m, 0, IntMin(800, ys), imaging.Lanczos)
+		return imaging.Resize(m, 0, IntMin(size, ys), imaging.Lanczos)
 	}
 }
 
@@ -263,8 +264,8 @@ func RandomizeColor(c color.Color, settings *PainterlySettings) color.NRGBA{
 	n := colorful.Color{R/65535, G/65535, B/65535}
 	h, s, v := n.Hsv()
 	H := Overflow64(0,rand.NormFloat64() * sty.JitterHue * 45 + h,360)
-	S := Clamp64(0,rand.NormFloat64() * sty.JitterSaturation * 0.1 + s,1)
-	V := Clamp64(0,rand.NormFloat64() * sty.JitterValue * 0.1 + v,1)
+	S := Clamp64(0,rand.NormFloat64() * sty.JitterSaturation * 0.25 + s,1)
+	V := Clamp64(0,rand.NormFloat64() * sty.JitterValue * 0.25 + v,1)
 	
 	n2 := colorful.Hsv(H, S, V)
 	r2, g2, b2 := n2.RGB255()
