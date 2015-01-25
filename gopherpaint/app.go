@@ -15,21 +15,12 @@ import (
 	"image/png"
 	"io"
 	"net/http"
-	"time"
 )
 
 var templates = map[string]*template.Template{
 	"prepare": template.Must(template.ParseFiles("templates/prepare.html", "templates/scripts.html")),
 	"home":    template.Must(template.ParseFiles("templates/home.html", "templates/scripts.html")),
 	"share":   template.Must(template.ParseFiles("templates/share.html", "templates/scripts.html")),
-}
-
-type Image struct {
-	OwnerID      string
-	Blobkey      appengine.BlobKey
-	Style        string
-	CreationTime time.Time
-	MD5          string
 }
 
 func init() {
@@ -60,7 +51,6 @@ func handleUpload(w http.ResponseWriter, r *http.Request) {
 		serveError(c, w, errors.New("no files uploaded"))
 		return
 	}
-
 	http.Redirect(w, r, "/prepare?blobKey="+string(file[0].BlobKey), http.StatusFound)
 }
 
