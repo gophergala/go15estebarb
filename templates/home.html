@@ -33,7 +33,7 @@
     <h2>Images of {{.UserName}} <a class="btn btn-warning btn-xs" href="{{.LogoutURL}}">Logout</a> </h2>
     <div class="row">
         {{ range $key, $value := .Images }}
-        <div class="col-sm-6 col-md-4">
+        <div class="col-sm-4 col-md-3">
             <div class="thumbnail">
                 <a href="/share?blobKey={{$value.Blobkey}}&style={{$value.Style}}">
                     <img class="img-responsive img-thumbnail"
@@ -71,6 +71,7 @@
         </div>
     </div>
     {{ end }}
+    {{template "footer" .}}
 </div>
 </body>
 </html>

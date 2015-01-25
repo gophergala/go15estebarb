@@ -10,11 +10,17 @@
 {{template "scripts" .}}
 {{template "navbar" .}}
 <div class="container">
+    
+    <ol class="breadcrumb">
+        <li><a href="/">Home</a></li>
+        <li>Choose style</li>
+    </ol>
+    
 <h1>Painting Styles</h1>
 <p>Please select a painting style</p>
     
 <div class="row">
-    <div class="col-sm-6 col-md-4">
+    <div class="col-sm-4 col-md-3">
         <div class="thumbnail">
             <a href="/share?blobKey={{.imgkey}}&style=voronoi">
             <img src="/render?blobKey={{.imgkey}}&style=voronoi" alt="voronoi">
@@ -24,7 +30,7 @@
             </div>
         </div>
     </div>
-    <div class="col-sm-6 col-md-4">
+    <div class="col-sm-4 col-md-3">
         <div class="thumbnail">
             <a href="/share?blobKey={{.imgkey}}&style=oilpaint">
             <img src="/render?blobKey={{.imgkey}}&style=oilpaint" alt="oilpaint">
@@ -34,7 +40,7 @@
             </div>
         </div>
     </div>
-    <div class="col-sm-6 col-md-4">
+    <div class="col-sm-4 col-md-3">
         <div class="thumbnail">
             <a href="/share?blobKey={{.imgkey}}&style=impresionist">
             <img src="/render?blobKey={{.imgkey}}&style=impresionist" alt="impresionist">
@@ -44,7 +50,7 @@
             </div>
         </div>
     </div>
-    <div class="col-sm-6 col-md-4">
+    <div class="col-sm-4 col-md-3">
         <div class="thumbnail">
             <a href="/share?blobKey={{.imgkey}}&style=expresionist">
             <img src="/render?blobKey={{.imgkey}}&style=expresionist" alt="expresionist">
@@ -54,7 +60,7 @@
             </div>
         </div>
     </div>
-    <div class="col-sm-6 col-md-4">
+    <div class="col-sm-4 col-md-3">
         <div class="thumbnail">
             <a href="/share?blobKey={{.imgkey}}&style=coloristwash">
             <img src="/render?blobKey={{.imgkey}}&style=coloristwash" alt="colorist wash">
@@ -64,7 +70,7 @@
             </div>
         </div>
     </div>
-    <div class="col-sm-6 col-md-4">
+    <div class="col-sm-4 col-md-3">
         <div class="thumbnail">
             <a href="/share?blobKey={{.imgkey}}&style=pointillist">
             <img src="/render?blobKey={{.imgkey}}&style=pointillist" alt="pointillist">
@@ -74,7 +80,7 @@
             </div>
         </div>
     </div>
-    <div class="col-sm-6 col-md-4">
+    <div class="col-sm-4 col-md-3">
         <div class="thumbnail">
             <a href="/share?blobKey={{.imgkey}}&style=psychedelic">
             <img src="/render?blobKey={{.imgkey}}&style=psychedelic" alt="psychedelic">
@@ -84,7 +90,7 @@
             </div>
         </div>
     </div>
-    <div class="col-sm-6 col-md-4">
+    <div class="col-sm-4 col-md-3">
         <div class="thumbnail">
             <a href="/share?blobKey={{.imgkey}}&style=grayscale">
             <img src="/render?blobKey={{.imgkey}}&style=grayscale" alt="grayscale">

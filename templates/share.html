@@ -11,6 +11,13 @@
 {{template "navbar" .}}
 <div class="container">
     <h1>Share or download your paint</h1>
+    {{if .IsLogged }}
+    <ol class="breadcrumb">
+        <li><a href="/">Home</a></li>
+        <li><a href="/prepare?blobKey={{.imgkey}}">Change style</a></li>
+        <li>Share</li>
+    </ol>
+    {{ end }}
     <img src="/render?blobKey={{.imgkey}}&style={{.style}}&size=800" alt="{{.style}}" class="img-responsive">
     <div class="row">
         <div class="col-sm-6">

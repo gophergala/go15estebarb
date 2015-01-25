@@ -19,9 +19,10 @@ import (
 )
 
 var templates = map[string]*template.Template{
-	"prepare": template.Must(template.ParseFiles("templates/prepare.html", "templates/scripts.html", "templates/navbar.html")),
-	"home":    template.Must(template.ParseFiles("templates/home.html", "templates/scripts.html", "templates/navbar.html")),
-	"share":   template.Must(template.ParseFiles("templates/share.html", "templates/scripts.html", "templates/navbar.html")),
+	"prepare": template.Must(template.ParseFiles("templates/prepare.html", "templates/scripts.html", 
+		"templates/navbar.html" , "templates/footer.html")),
+	"home":    template.Must(template.ParseFiles("templates/home.html", "templates/scripts.html", "templates/navbar.html", "templates/footer.html")),
+	"share":   template.Must(template.ParseFiles("templates/share.html", "templates/scripts.html", "templates/navbar.html", "templates/footer.html")),
 }
 
 func init() {
@@ -47,11 +48,11 @@ func handleUpload(w http.ResponseWriter, r *http.Request) {
 		serveError(c, w, err)
 		return
 	}
-	
+
 	// if not logged in then fail
 	u := user.Current(c)
-	if u == nil{
-		http.Redirect(w,r,"/", http.StatusFound)
+	if u == nil {
+		http.Redirect(w, r, "/", http.StatusFound)
 	}
 
 	file := blobs["file"]
@@ -59,31 +60,31 @@ func handleUpload(w http.ResponseWriter, r *http.Request) {
 		serveError(c, w, errors.New("no files uploaded"))
 		return
 	}
-	ImagesPOST(c,u,file[0],"grayscale")
+	ImagesPOST(c, u, file[0], "grayscale")
 	http.Redirect(w, r, "/prepare?blobKey="+string(file[0].BlobKey), http.StatusFound)
 }
 
 func handleDelete(w http.ResponseWriter, r *http.Request) {
 	c := appengine.NewContext(r)
-	if r.Method != "POST"{
+	if r.Method != "POST" {
 		serveError(c, w, errors.New("Ilegal method attemp"))
 		return
 	}
 	r.ParseForm()
 	blobkey := r.FormValue("blobKey")
 	usr := user.Current(c)
-	if usr == nil{
-		http.Redirect(w,r, "/", http.StatusFound)
+	if usr == nil {
+		http.Redirect(w, r, "/", http.StatusFound)
 		return
 	}
 	err := Images_Delete(c, usr, blobkey)
-	if err != nil{
+	if err != nil {
 		serveError(c, w, err)
 	}
 	// Need for sleep. Or we aren't going to delete the image
 	// before the next rendering of frontpage.
 	time.Sleep(500 * time.Millisecond)
-	http.Redirect(w,r, "/", http.StatusFound)
+	http.Redirect(w, r, "/", http.StatusFound)
 }
 
 func handleShare(w http.ResponseWriter, r *http.Request) {
@@ -95,21 +96,53 @@ func handleShare(w http.ResponseWriter, r *http.Request) {
 	newstyle := r.FormValue("style")
 	context["style"] = newstyle
 	u := user.Current(c)
-	if u != nil{
+	if u != nil {
 		_, err := Images_UpdateStyle(c, u, imgkey, newstyle)
-		if err != nil{
+		if err != nil {
 			c.Errorf("handleShare: %v", err)
 		}
+
+		context["IsLogged"] = true
+		context["UserName"] = u.String()
+		context["LogoutURL"], err = user.LogoutURL(c, "/")
+		if err != nil {
+			c.Errorf("Error share logged:", err)
+		}
+	} else {
+		url, err := user.LoginURL(c, r.URL.String())
+		if err != nil {
+			c.Errorf("Error SetupPaint no logged:", err)
+		}
+		context["IsLogged"] = false
+		context["LoginURL"] = url
 	}
-	
+
 	templates["share"].Execute(w, context)
 }
 
 func handleSetupPaint(w http.ResponseWriter, r *http.Request) {
-	//c := appengine.NewContext(r)
+	c := appengine.NewContext(r)
 	context := make(map[string]interface{})
 	context["imgkey"] = r.FormValue("blobKey")
-	//context["ListOfStyles"] = ListOfStyles
+
+	u := user.Current(c)
+	var err error
+	if u == nil {
+		url, err := user.LoginURL(c, r.URL.String())
+		if err != nil {
+			c.Errorf("Error SetupPaint no logged:", err)
+		}
+		context["IsLogged"] = false
+		context["LoginURL"] = url
+	} else {
+		context["IsLogged"] = true
+		context["UserName"] = u.String()
+		context["LogoutURL"], err = user.LogoutURL(c, "/")
+		if err != nil {
+			c.Errorf("Error SetupPaint logged:", err)
+		}
+	}
+
 	templates["prepare"].Execute(w, context)
 }
 
@@ -188,6 +221,7 @@ func handleRender(w http.ResponseWriter, r *http.Request, size int) {
 	if err != nil {
 		return
 	}
+
 	img = filters.RescaleImage(img, size)
 	switch style {
 	case "voronoi":
@@ -223,12 +257,12 @@ func handleRender(w http.ResponseWriter, r *http.Request, size int) {
 		style = "grayscale"
 		img = filters.FilterGrayscale(c, img)
 	}
-	
+
 	buffer := bytes.NewBuffer([]byte{})
 	png.Encode(buffer, img)
 	w.Write(buffer.Bytes())
-	
-	if buffer.Len() < (1000 * 1000 - 300) {
+
+	if buffer.Len() < (1000*1000 - 300) {
 		mcItem := &memcache.Item{
 			Key:   (string)(blobkey) + "_" + style + "_" + string(size),
 			Value: buffer.Bytes(),
