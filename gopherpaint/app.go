@@ -13,7 +13,6 @@ import (
 	_ "image/gif"
 	_ "image/jpeg"
 	"image/png"
-	"io"
 	"net/http"
 	"time"
 )
@@ -34,18 +33,16 @@ func init() {
 	http.HandleFunc("/", handler)
 }
 
-func serveError(c appengine.Context, w http.ResponseWriter, err error) {
-	w.WriteHeader(http.StatusInternalServerError)
-	w.Header().Set("Content-Type", "text/plain")
-	io.WriteString(w, "Internal Server Error")
+func serveError(c appengine.Context, w http.ResponseWriter, err error, r *http.Request) {
 	c.Errorf("%v", err)
+	http.Redirect(w, r, "/", http.StatusFound)
 }
 
 func handleUpload(w http.ResponseWriter, r *http.Request) {
 	c := appengine.NewContext(r)
 	blobs, _, err := blobstore.ParseUpload(r)
 	if err != nil {
-		serveError(c, w, err)
+		serveError(c, w, err, r)
 		return
 	}
 
@@ -57,7 +54,7 @@ func handleUpload(w http.ResponseWriter, r *http.Request) {
 
 	file := blobs["file"]
 	if len(file) == 0 {
-		serveError(c, w, errors.New("no files uploaded"))
+		serveError(c, w, errors.New("no files uploaded"), r)
 		return
 	}
 	ImagesPOST(c, u, file[0], "grayscale")
@@ -67,7 +64,7 @@ func handleUpload(w http.ResponseWriter, r *http.Request) {
 func handleDelete(w http.ResponseWriter, r *http.Request) {
 	c := appengine.NewContext(r)
 	if r.Method != "POST" {
-		serveError(c, w, errors.New("Ilegal method attemp"))
+		serveError(c, w, errors.New("Ilegal method attemp"), r)
 		return
 	}
 	r.ParseForm()
@@ -79,7 +76,7 @@ func handleDelete(w http.ResponseWriter, r *http.Request) {
 	}
 	err := Images_Delete(c, usr, blobkey)
 	if err != nil {
-		serveError(c, w, err)
+		serveError(c, w, err, r)
 	}
 	// Need for sleep. Or we aren't going to delete the image
 	// before the next rendering of frontpage.
@@ -154,7 +151,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	if u == nil {
 		url, err := user.LoginURL(c, r.URL.String())
 		if err != nil {
-			serveError(c, w, err)
+			serveError(c, w, err, r)
 			return
 		}
 		context["IsLogged"] = false
@@ -164,12 +161,12 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		context["UserName"] = u.String()
 		context["LogoutURL"], err = user.LogoutURL(c, "/")
 		if err != nil {
-			serveError(c, w, err)
+			serveError(c, w, err, r)
 			return
 		}
 		pics, err := Images_OfUser_GET(c, u)
 		if err != nil {
-			serveError(c, w, err)
+			serveError(c, w, err, r)
 			return
 		}
 		context["Images"] = pics
@@ -177,7 +174,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	uploadURL, err := blobstore.UploadURL(c, "/upload", nil)
 	context["uploadURL"] = uploadURL.Path
 	if err != nil {
-		serveError(c, w, err)
+		serveError(c, w, err, r)
 	}
 	w.Header().Set("Cache-Control", "private, no-store, max-age=0, no-cache, must-revalidate, post-check=0, pre-check=0")
 	templates["home"].Execute(w, context)

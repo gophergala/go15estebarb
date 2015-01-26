@@ -8,6 +8,15 @@
 </head>
 <body>
 {{template "scripts" .}}
+<script>
+$(document).ready(function(){
+    $("#picrendering").one("load", function() {
+      $("#pleasewaittext").hide();
+    }).each(function() {
+      if(this.complete) $(this).load();
+    });
+    });
+</script>
 {{template "navbar" .}}
 <div class="container">
     <h1>Share or download your paint</h1>
@@ -18,7 +27,9 @@
         <li>Share</li>
     </ol>
     {{ end }}
-    <img src="/render?blobKey={{.imgkey}}&style={{.style}}&size=800" alt="{{.style}}" class="img-responsive">
+    <p id="pleasewaittext">Please wait while we are painting your image</p>
+    <img id="picrendering" src="/render?blobKey={{.imgkey}}&style={{.style}}&size=800" alt="{{.style}}"
+         class="img-responsive">
     <div class="row">
         <div class="col-sm-6">
             <h3>Share it!</h3>
